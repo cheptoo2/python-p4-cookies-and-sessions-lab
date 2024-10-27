@@ -2,7 +2,6 @@
 
 from flask import Flask, make_response, jsonify, session
 from flask_migrate import Migrate
-
 from models import db, Article, User
 
 app = Flask(__name__)
@@ -12,7 +11,6 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.json.compact = False
 
 migrate = Migrate(app, db)
-
 db.init_app(app)
 
 @app.route('/clear')
@@ -22,13 +20,26 @@ def clear_session():
 
 @app.route('/articles')
 def index_articles():
-
-    pass
+    # Fetch all articles and return as JSON
+    articles = Article.query.all()
+    articles_data = [article.to_dict() for article in articles]
+    return jsonify(articles_data), 200
 
 @app.route('/articles/<int:id>')
 def show_article(id):
+    # Check if the article exists
+    article = Article.query.get(id)
+    if not article:
+        return jsonify({'message': 'Article not found'}), 404
 
-    pass
+    # Initialize or increment the page view count
+    session['page_views'] = session.get('page_views', 0) + 1
+
+    # Check if page view limit has been exceeded
+    if session['page_views'] > 3:
+        return jsonify({'message': 'Maximum pageview limit reached'}), 401
+    else:
+        return jsonify(article.to_dict()), 200
 
 if __name__ == '__main__':
     app.run(port=5555)
